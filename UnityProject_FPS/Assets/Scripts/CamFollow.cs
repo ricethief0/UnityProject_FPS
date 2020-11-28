@@ -31,6 +31,8 @@ public class CamFollow : MonoBehaviour
     }
     private void LateUpdate()
     {
+        if (target == null) return;
+        else if (target1st == null) return;
         if (isFPS)
         {
             //카메라의 위치를 강제로 타겟에 고정해둔다.

@@ -11,6 +11,8 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] float yMax = 70f;
     [SerializeField] float gravity = 20f;
     [SerializeField] float jumpSpeed = 8f;
+    int jumpCount=0;
+    float velocityY=0f;
     Vector3 dir = Vector3.zero;
     
     private float mouseX=0f;
@@ -28,14 +30,47 @@ public class PlayerMove : MonoBehaviour
     void Update()
     {
 
-       // Move1(); 내가 한거
-       
-        Move2(); // 수업
+        // Move1(); 내가 한거
 
+        // Move2(); // 수업
+        Move3(); // 점프수업
         
     }
 
-   
+    private void Move3()
+    {
+        
+            float h = Input.GetAxis("Horizontal");
+            float v = Input.GetAxis("Vertical");
+
+            dir = new Vector3(h, 0, v).normalized;
+
+            dir = Camera.main.transform.TransformDirection(dir);
+
+        
+        
+        //중력적용
+        if(controllerP.isGrounded) // 플레이어가 땅에 닿아 있는 상태냐?
+        {
+            velocityY = 0;
+            jumpCount = 0;
+        }
+        else
+        {
+            velocityY -= gravity * Time.deltaTime; //gravity
+        }
+            if (Input.GetButtonDown("Jump") && jumpCount <2)
+            {
+                velocityY = jumpSpeed;
+            jumpCount++;
+            }
+        //if(controllerP.collisionFlags == CollisionFlags.Below) // Above / Side 도 있음.  
+        //{
+        //
+        //}
+        dir.y = velocityY;
+        controllerP.Move(dir * speed * Time.deltaTime);
+    }
 
     private void Move2()
     {
