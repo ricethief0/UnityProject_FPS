@@ -18,6 +18,8 @@ public class EnemyFSM : MonoBehaviour
 
     EnemyState state; // 에너미스테이트를 변수한것.
 
+    private Animator animator;
+
     //유용한 기능
     #region "Idle 상태에 필요한 변수들"
     GameObject target;
@@ -56,6 +58,12 @@ public class EnemyFSM : MonoBehaviour
     # region "Die 상태에 필요한 변수들"
     #endregion
 
+
+    private void Awake()
+    {
+        animator = transform.Find("warrior_red").GetComponent<Animator>();
+    }
+
     void Start()
     {
         //에너미 상태 초기화
@@ -89,10 +97,13 @@ public class EnemyFSM : MonoBehaviour
             case EnemyState.Damaged:
                 Damaged();
                 break;
-            //case EnemyState.Die:
-            //    Die();
-            //    break;
+            case EnemyState.Die:
+                Die();
+                break;
         }
+
+        animator.SetInteger("state", (int)state);
+        print(animator.GetInteger("state"));
      }
     
 
@@ -158,6 +169,7 @@ public class EnemyFSM : MonoBehaviour
         if(Vector3.Distance(transform.position,target.transform.position)> atkArena)
         {
             state = EnemyState.Move;
+
         }
     }
 
@@ -195,20 +207,20 @@ public class EnemyFSM : MonoBehaviour
                                
         hp -= damage;
         if (hp <= 0)
-            Die();
+            state = EnemyState.Die;
         //if (Time.time >= lastHitTime)dssssss
         //    state = EnemyState.Idle;
-        IEnumerator hitDelayCo()
-        {
-            yield return new WaitForSeconds(hitTime);
-            if(state != EnemyState.Return)
-            state = EnemyState.Idle;
-        }
-
+        
+        else
         StartCoroutine(hitDelayCo());
        
     }
-    
+    IEnumerator hitDelayCo()
+    {
+        yield return new WaitForSeconds(hitTime);
+        if (state != EnemyState.Return)
+            state = EnemyState.Idle;
+    }
     private void Die() //Any State
     {
         /* 코루틴 사용하자
@@ -217,8 +229,13 @@ public class EnemyFSM : MonoBehaviour
          * - 상태변경
          * - 상태전환 출력
          */
+        StartCoroutine(dieCo(1));
+        
+    }
+    IEnumerator dieCo(int num)
+    {
+        yield return new WaitForSeconds(num);
         Destroy(gameObject);
     }
-
 }
 

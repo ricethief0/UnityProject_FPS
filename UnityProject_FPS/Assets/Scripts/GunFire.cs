@@ -51,7 +51,7 @@ public class GunFire : MonoBehaviour
 
           
 
-                Debug.Log(hitInfo.transform.name);
+
                 //충돌지점에 총알 이펙트만 생성하면 된다.
                 //총알이펙트 생성
                 GameObject bulletFx = Instantiate(bulletFactory);

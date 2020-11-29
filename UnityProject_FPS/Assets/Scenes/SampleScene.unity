@@ -1066,7 +1066,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 85fc68521a5a3684297c7379fe02d7ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  respawnTime: 5
+  respawnTime: 30
   enemyFactory: {fileID: 5111731396668391367, guid: f3cde2e2abac07942bfc65ac275c5d46,
     type: 3}
 --- !u!4 &1242373561
