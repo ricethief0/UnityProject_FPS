@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class EnemyFSM : MonoBehaviour
 {
@@ -19,7 +20,7 @@ public class EnemyFSM : MonoBehaviour
     EnemyState state; // 에너미스테이트를 변수한것.
 
     private Animator animator;
-
+    private NavMeshAgent agent;
     //유용한 기능
     #region "Idle 상태에 필요한 변수들"
     GameObject target;
@@ -27,18 +28,18 @@ public class EnemyFSM : MonoBehaviour
     #endregion
 
     #region "Move 상태에 필요한 변수들"
-    private CharacterController characterC;
-    [SerializeField]  float speed = 5f;
-    private float gravityPower = 20f;
-
+   // private CharacterController characterC;
+    //[SerializeField]  float speed = 5f;
+    //private float gravityPower = 20f;
+    private Vector3 agentVelo;
 
     #endregion
 
     #region "Attack 상태에 필요한 변수들"
     int atkPower = 10;
-    float atkSpeed = 1f;
+    float atkSpeed = 3f;
     float atkArena;
-    float atkDistance = 1.5f;
+    //float atkDistance = 1.5f;
     float lastAtkTime=0f;
     public GameObject BulletFactory;
     #endregion
@@ -52,7 +53,7 @@ public class EnemyFSM : MonoBehaviour
     #region "Damaged 상태에 필요한 변수들"
     [SerializeField] int hp = 50;
     [SerializeField] float hitTime = 2f;
-    private float lastHitTime = 0f;
+    //private float lastHitTime = 0f;
     #endregion
 
     # region "Die 상태에 필요한 변수들"
@@ -62,17 +63,21 @@ public class EnemyFSM : MonoBehaviour
     private void Awake()
     {
         animator = transform.Find("warrior_red").GetComponent<Animator>();
+        agent = GetComponent<NavMeshAgent>();
     }
 
     void Start()
     {
         //에너미 상태 초기화
+        if (Vector3.Distance(transform.position, startPosition) > returnDistance)
+            state = EnemyState.Return;
+        else
         state = EnemyState.Idle;
         target = GameObject.Find("Player");
-        characterC = GetComponent<CharacterController>();
+        //characterC = GetComponent<CharacterController>();
         startPosition = transform.position;
         startRotate = transform.eulerAngles;
-        atkArena = characterC.radius + 1f;
+        atkArena = 2f;
     }
 
     // Update is called once per frame
@@ -101,9 +106,8 @@ public class EnemyFSM : MonoBehaviour
                 Die();
                 break;
         }
-
+       
         animator.SetInteger("state", (int)state);
-        print(animator.GetInteger("state"));
      }
     
 
@@ -114,14 +118,20 @@ public class EnemyFSM : MonoBehaviour
         // -일정범위 20m(거리비교 : Distance, magnitude 아무거나 사용)
         // -상태 변경 -> 이동
         // -상태전환 출력
-        
-        if(Vector3.Distance(transform.position,target.transform.position)<=searchArena)
+        if (Vector3.Distance(transform.position, startPosition) > returnDistance)
+        {
+            agent.ResetPath();
+            state = EnemyState.Return;
+        }
+        else if (Vector3.Distance(transform.position,target.transform.position)<=searchArena)
         {
             state = EnemyState.Move;
         }
     }
     private void Move()
     {
+        if (!agent.enabled)
+            agent.enabled = true;
         /* 1. 플레이어를 향해서 이동 후 공격범위 안에 들어오면 공격상태로 변경
          * 2. 플레이어를 추격하더라도 처음위치에서 일정범위를 넘어감녀 리턴상태로 변경
          *  - 플레이어처럼 캐릭터 컨트롤러를 이욯가ㅣ
@@ -129,19 +139,28 @@ public class EnemyFSM : MonoBehaviour
          *  - 상태변경 -> 공격 or 리턴
          *  - 상태전환 출력
          */
-        Vector3 dir = (target.transform.position - transform.position).normalized;
+        //Vector3 dir = (target.transform.position - transform.position).normalized;
         //dir.y -= gravityPower;
         //characterC.Move(dir*speed*Time.deltaTime);
-        
-        characterC.SimpleMove(dir * speed );
-        characterC.transform.LookAt(target.transform);
 
-        if (Vector3.Distance(transform.position, startPosition) >= returnDistance)
+        //characterC.SimpleMove(dir * speed );
+        agent.SetDestination(target.transform.position);
+        //agent.isStopped = false;
+        //characterC.transform.LookAt(target.transform);
+
+        if (Vector3.Distance(transform.position, startPosition) > returnDistance)
         {
+            //agent.isStopped = true;
+            agent.ResetPath();
             state = EnemyState.Return;
         }
-        else if (Vector3.Distance(transform.position, target.transform.position) <= atkArena)
+        else if (Vector3.Distance(transform.position, target.transform.position) < atkArena)
         {
+            
+            agent.enabled = false;
+            //agent.isStopped = true;
+            //agent.velocity = Vector3.zero;
+            //agent.ResetPath();
             state = EnemyState.Attack;
         }
     }
@@ -154,36 +173,58 @@ public class EnemyFSM : MonoBehaviour
          * - 상태전환 출력 
          */
         //Debug.Log("atk");
-        
-        if(Time.time >=lastAtkTime )
+
+        if (Time.time >= lastAtkTime)
+        {
+            StartCoroutine(fxAppear(0.7f));
+            lastAtkTime = Time.time + atkSpeed;
+
+            animator.SetTrigger("reAttack");
+
+        }
+        else
+        { 
+            state = EnemyState.Idle;
+            return;
+        }
+        if (animator.GetCurrentAnimatorStateInfo(0).IsName("AtkDelay"))
+        { 
+            if(Vector3.Distance(transform.position,target.transform.position)> atkArena)
+            {
+                state = EnemyState.Move;
+
+            }
+        }
+    }
+    IEnumerator fxAppear(float second)
+    {
+        yield return new WaitForSeconds(second);
+        if (target.GetComponent<PlayerState>().hpManager > 0)
         {
             GameObject bullet = Instantiate(BulletFactory);
             bullet.transform.position = target.transform.position;
             bullet.transform.forward = (target.transform.position - transform.position).normalized;
-            lastAtkTime = Time.time + atkSpeed;
             target.GetComponent<PlayerState>().hpManager -= atkPower;
-           // target.GetComponent<PlayerState>().Hit(atkPower);
-            
-        }
-
-        if(Vector3.Distance(transform.position,target.transform.position)> atkArena)
-        {
-            state = EnemyState.Move;
-
+            target.GetComponent<PlayerState>().animator.SetTrigger("Damage");
         }
     }
-
     private void Return()//복귀상태
     {
+        //if (!agent.enabled)
+        //    agent.enabled = true;
         /* 1. 에너미가 플레이어를 추격하더라도 처음위치에서 일정범위를 벗어나면 다시 돌아옴
          * - 처음위치에서 일정범위 30m
          * - 상태변경
          * - 상태전환 출력
          */
-        characterC.transform.LookAt(startPosition);
-        characterC.Move(transform.forward*speed*Time.deltaTime);
-        if((startPosition-transform.position).sqrMagnitude <=0.5f)
+        //characterC.transform.LookAt(startPosition);
+        //characterC.Move(transform.forward*speed*Time.deltaTime);
+        agent.SetDestination(startPosition);
+
+        if((startPosition-transform.position).sqrMagnitude <=1f)
         {
+            agent.ResetPath();
+            agent.enabled = false;
             state = EnemyState.Idle;
             transform.eulerAngles = startRotate;
         }
@@ -194,16 +235,21 @@ public class EnemyFSM : MonoBehaviour
     {
         if (damage == 0) return; // 피격당하지 않은상태
 
+
         /* 코루틴 사용하자
          * 1. 에너미 체력이 1이상일때만, 피격을 받을수 있도록 한다.
          * 2. 다시 이전상태로 변경 (코루틴을 사용해서 처리)
          * - 상태변경
          * - 상태전환출력
          */
-        
-            //lastHitTime = Time.time + hitTime; Debug.Log(lastHitTime); 
-        if(state != EnemyState.Return)
-            state = EnemyState.Damaged;
+
+        //lastHitTime = Time.time + hitTime; Debug.Log(lastHitTime); 
+        if (state != EnemyState.Return)
+        {
+            if (agent.enabled)
+                agent.enabled = false;
+            state = EnemyState.Damaged; 
+        }
                                
         hp -= damage;
         if (hp <= 0)
@@ -218,23 +264,27 @@ public class EnemyFSM : MonoBehaviour
     IEnumerator hitDelayCo()
     {
         yield return new WaitForSeconds(hitTime);
+
         if (state != EnemyState.Return)
             state = EnemyState.Idle;
     }
     private void Die() //Any State
     {
+        
         /* 코루틴 사용하자
          * 1. 체력이 0이하일 때 작동.
          * 2. 몬스터 오브젝트 삭제
          * - 상태변경
          * - 상태전환 출력
          */
+       
         StartCoroutine(dieCo(1));
         
     }
     IEnumerator dieCo(int num)
     {
         yield return new WaitForSeconds(num);
+        StopAllCoroutines();
         Destroy(gameObject);
     }
 }

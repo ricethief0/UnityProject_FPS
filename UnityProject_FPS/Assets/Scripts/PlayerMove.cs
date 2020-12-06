@@ -5,6 +5,11 @@ using UnityEngine;
 
 public class PlayerMove : MonoBehaviour
 {
+    //enum PLAYERSTATE
+    //{
+    //    Idle, Run, Return, Fire,Damage,Die,Jump,Bomb
+
+    //}
 
     [SerializeField] float speed = 5f;
     [SerializeField] float yMin = -70f;
@@ -19,10 +24,14 @@ public class PlayerMove : MonoBehaviour
     private float mouseY=0f;
     private float rSpeed = 2.5f;
     private CharacterController controllerP;
-  
+    PlayerState anim;
+
+    // PLAYERSTATE state = PLAYERSTATE.Idle;
     // Start is called before the first frame update
     void Start()
     {
+       anim = GetComponent<PlayerState>();
+        //animator = GetComponentsInChildren<Animator>()[0];
         controllerP = GetComponent<CharacterController>();
     }
 
@@ -34,8 +43,9 @@ public class PlayerMove : MonoBehaviour
 
         // Move2(); // 수업
         Move3(); // 점프수업
-        
     }
+
+   
 
     private void Move3()
     {
@@ -47,10 +57,12 @@ public class PlayerMove : MonoBehaviour
 
             dir = Camera.main.transform.TransformDirection(dir);
 
-        
-        
+        if (( controllerP.isGrounded && h != 0 || v != 0) )
+            anim.animator.SetTrigger("Run");
+        else if(controllerP.isGrounded && h == 0 && v == 0 )
+            anim.animator.SetTrigger("Idle");
         //중력적용
-        if(controllerP.isGrounded) // 플레이어가 땅에 닿아 있는 상태냐?
+        if (controllerP.isGrounded) // 플레이어가 땅에 닿아 있는 상태냐?
         {
             velocityY = 0;
             jumpCount = 0;
@@ -59,16 +71,22 @@ public class PlayerMove : MonoBehaviour
         {
             velocityY -= gravity * Time.deltaTime; //gravity
         }
-            if (Input.GetButtonDown("Jump") && jumpCount <2)
-            {
-                velocityY = jumpSpeed;
-            jumpCount++;
-            }
+
+        if (Input.GetButtonDown("Jump") && jumpCount <2)
+        {
+            velocityY = jumpSpeed;
+             jumpCount++;
+            
+            anim.animator.SetTrigger("Jump");
+        }
         //if(controllerP.collisionFlags == CollisionFlags.Below) // Above / Side 도 있음.  
         //{
         //
         //}
+        //if (jumpCount == 0 && h == 0 && v == 0)
+        //    animator.SetTrigger("Idle");
         dir.y = velocityY;
+        
         controllerP.Move(dir * speed * Time.deltaTime);
     }
 

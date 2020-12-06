@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,18 +14,50 @@ public class Bomb : MonoBehaviour
      */
 
     public GameObject fxFactory; // 이펙트 프리팹도 필요하다.
-
+    [SerializeField] int bombDam = 20;
+    float timer = 0f;
+    private GunFire gun;
+    private void Start()
+    {
+         gun = GameObject.Find("Player").GetComponent<GunFire>();
+    }
     //충돌처리 
+    private void Update()
+    {
+
+        lateDestory();
+    }
+
+    private void lateDestory()
+    {
+        timer += Time.deltaTime;
+        if (timer >= 3f)
+        {
+            GameObject fx = Instantiate(fxFactory);
+            fx.transform.position = transform.position;
+            gun.bombCount--;
+            
+            //다른오브젝트 삭제
+            //자기자신도 삭제하기
+            Destroy(gameObject);
+        }
+    }
+
     private void OnCollisionEnter(Collision collision)
     {
         //폭발이펙트 보여주기
         GameObject fx = Instantiate(fxFactory);
         fx.transform.position = transform.position;
-        
-        Debug.Log(collision.collider.name);
+        gun.bombCount--;
+        if(collision.transform.tag=="Enemy")
+        {
+            EnemyFSM enemy = collision.transform.GetComponent<EnemyFSM>();
+            enemy.Damaged(bombDam);
+        }
         //다른오브젝트 삭제
         //자기자신도 삭제하기
         Destroy(gameObject);
     }
+
 
 }

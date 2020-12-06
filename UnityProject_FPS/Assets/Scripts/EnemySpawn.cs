@@ -17,11 +17,13 @@ public class EnemySpawn : MonoBehaviour
         if(Time.time > lastSpawnTime)
         {
             GameObject enemy = Instantiate(enemyFactory);
-            float xMin = transform.position.x - 10;
-            float xMax = transform.position.x + 10;
-            float zMin = transform.position.z - 10;
-            float zMax = transform.position.z + 10;
+            float xMin = transform.position.x - 2;
+            float xMax = transform.position.x + 2;
+            float zMin = transform.position.z - 2;
+            float zMax = transform.position.z + 2;
             Vector3 spawnPosition = new Vector3(Random.Range(xMin, xMax), 1, Random.Range(zMin, zMax));
+            //Debug.Log( " z : "+ spawnPosition.z);
+            //Debug.Log( " x : "+ spawnPosition.x);
             enemy.transform.position = spawnPosition;
             lastSpawnTime = Time.time+respawnTime;
         }
