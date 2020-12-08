@@ -13,7 +13,7 @@ public class PlayerState : MonoBehaviour
 
     private void Awake()
     {
-        animator = transform.Find("PlayerModelNew").GetComponent<Animator>();
+        animator = GetComponentInChildren<Animator>();
     }
     void Update()
     {
